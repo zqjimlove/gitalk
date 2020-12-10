@@ -151,7 +151,7 @@ class GitalkComponent extends Component {
   }
 
   get accessToken () {
-    return this._accessToke || window.localStorage.getItem(GT_ACCESS_TOKEN)
+    return this.options.accessToken || this._accessToken || window.localStorage.getItem(GT_ACCESS_TOKEN)
   }
   set accessToken (token) {
     window.localStorage.setItem(GT_ACCESS_TOKEN, token)
@@ -488,7 +488,11 @@ class GitalkComponent extends Component {
   handleLogin = () => {
     const { comment } = this.state
     window.localStorage.setItem(GT_COMMENT, encodeURIComponent(comment))
-    window.location.href = this.loginLink
+    if (this.options.handleLogin) {
+      this.options.handleLogin()
+    } else {
+      window.location.href = this.loginLink;
+    }
   }
   handleIssueCreate = () => {
     this.setState({ isIssueCreating: true })
