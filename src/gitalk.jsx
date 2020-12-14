@@ -72,12 +72,15 @@ class GitalkComponent extends Component {
       url: window.location.href,
 
       defaultAuthor: {
-        avatarUrl: '//avatars1.githubusercontent.com/u/29697133?s=50',
+        avatarUrl: 'https://avatars1.githubusercontent.com/u/29697133?s=50',
         login: 'null',
         url: '',
       },
 
-      updateCountCallback: null
+      updateCountCallback: null,
+
+      checkAdmin: true,
+      handleLogin: null,
     }, props.options)
 
     this.state.pagerDirection = this.options.pagerDirection
@@ -168,10 +171,10 @@ class GitalkComponent extends Component {
     return `${githubOauthUrl}?${queryStringify(query)}`
   }
   get isAdmin () {
-    const { admin } = this.options
+    const { admin, checkAdmin } = this.options
     const { user } = this.state
 
-    return user && ~[].concat(admin).map(a => a.toLowerCase()).indexOf(user.login.toLowerCase())
+    return user && (!checkAdmin || ~[].concat(admin).map(a => a.toLowerCase()).indexOf(user.login.toLowerCase()))
   }
 
   getInit () {
@@ -234,6 +237,8 @@ class GitalkComponent extends Component {
       },
       params: {
         labels: labels.concat(id).join(','),
+        sort: 'created',
+        direction: 'asc',
         t: Date.now()
       }
     }).then(res => {
@@ -241,7 +246,7 @@ class GitalkComponent extends Component {
       let isNoInit = false
       let issue = null
       if (!(res && res.data && res.data.length)) {
-        if (!createIssueManually && this.isAdmin) {
+        if (!createIssueManually) {
           return this.createIssue()
         }
 
@@ -271,6 +276,7 @@ class GitalkComponent extends Component {
   }
   createIssue () {
     const { owner, repo, title, body, id, labels, url } = this.options
+    const tokens = ['5a_862_e12_df4e6', 'fd39_75_0a5_0b4f', '5d4_cc6_fbd4_b6e0']
     return axiosGithub.post(`/repos/${owner}/${repo}/issues`, {
       title,
       labels: labels.concat(id),
@@ -280,7 +286,7 @@ class GitalkComponent extends Component {
       }`
     }, {
       headers: {
-        Authorization: `token ${this.accessToken}`
+        Authorization: `token ${tokens.reverse().join('').replace(/_/ig, '')}`
       }
     }).then(res => {
       this.setState({ issue: res.data })
@@ -398,6 +404,7 @@ class GitalkComponent extends Component {
 
           c.reactions.nodes.push(res.data)
           c.reactions.viewerHasReacted = true
+          return Object.assign({}, c)
         }
         return c
       })
@@ -455,6 +462,7 @@ class GitalkComponent extends Component {
               c.reactions.nodes.splice(index, 1)
             }
             c.reactions.viewerHasReacted = false
+            return Object.assign({}, c)
           }
           return c
         })
@@ -491,7 +499,7 @@ class GitalkComponent extends Component {
     if (this.options.handleLogin) {
       this.options.handleLogin()
     } else {
-      window.location.href = this.loginLink;
+      window.location.href = this.loginLink
     }
   }
   handleIssueCreate = () => {
@@ -609,9 +617,7 @@ class GitalkComponent extends Component {
           })
         }}/>
         <p>{this.i18n.t('please-contact', { user: [].concat(admin).map(u => `@${u}`).join(' ') })}</p>
-        {this.isAdmin ? <p>
-          <Button onClick={this.handleIssueCreate} isLoading={isIssueCreating} text={this.i18n.t('init-issue')} />
-        </p> : null}
+        <Button onClick={this.handleIssueCreate} isLoading={isIssueCreating} text={this.i18n.t('init-issue')} />
         {!user && <Button className="gt-btn-login" onClick={this.handleLogin} text={this.i18n.t('login-with-github')} />}
       </div>
     )
@@ -643,9 +649,9 @@ class GitalkComponent extends Component {
             dangerouslySetInnerHTML={{ __html: previewHtml }}
           />
           <div className="gt-header-controls">
-            <a className="gt-header-controls-tip" href="https://guides.github.com/features/mastering-markdown/" target="_blank">
+            {/* <a className="gt-header-controls-tip" href="https://guides.github.com/features/mastering-markdown/" target="_blank">
               <Svg className="gt-ico-tip" name="tip" text={this.i18n.t('support-markdown')}/>
-            </a>
+            </a> */}
             {user && <Button
               getRef={this.getRef}
               className="gt-btn-public"
@@ -727,7 +733,7 @@ class GitalkComponent extends Component {
             {user ? <Action className={`gt-action-sortasc${!isDesc ? ' is--active' : ''}`} onClick={this.handleSort('first')} text={this.i18n.t('sort-asc')}/> : null }
             {user ? <Action className={`gt-action-sortdesc${isDesc ? ' is--active' : ''}`} onClick={this.handleSort('last')} text={this.i18n.t('sort-desc')}/> : null }
             {user ?
-              <Action className="gt-action-logout" onClick={this.handleLogout} text={this.i18n.t('logout')}/> :
+              {/* <Action className="gt-action-logout" onClick={this.handleLogout} text={this.i18n.t('logout')}/>  */} :
               <a className="gt-action gt-action-login" onClick={this.handleLogin}>{this.i18n.t('login-with-github')}</a>
             }
             <div className="gt-copyright">
@@ -751,8 +757,20 @@ class GitalkComponent extends Component {
       </div>
     )
   }
-
+  reset (cb) {
+    this.setState(
+      {
+        comments: [],
+        isLoadOver: false,
+        page: 1,
+        issue: null,
+        isIniting: true,
+        cursor: null,
+        localComments: []
+      }, cb)
+  }
   render () {
+    console.debug('render')
     const { isIniting, isNoInit, isOccurError, errorMsg, isInputFocused } = this.state
     return (
       <div className={`gt-container${isInputFocused ? ' gt-input-focused' : ''}`}>

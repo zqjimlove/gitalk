@@ -77,7 +77,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ (function(module, exports) {
 
-var core = module.exports = { version: '2.6.11' };
+var core = module.exports = { version: '2.6.12' };
 if (typeof __e == 'number') __e = core; // eslint-disable-line no-undef
 
 
@@ -1279,7 +1279,7 @@ var store = global[SHARED] || (global[SHARED] = {});
 })('versions', []).push({
   version: core.version,
   mode: __webpack_require__(19) ? 'pure' : 'global',
-  copyright: '© 2019 Denis Pushkarev (zloirock.ru)'
+  copyright: '© 2020 Denis Pushkarev (zloirock.ru)'
 });
 
 
@@ -2859,7 +2859,7 @@ exports.default = function (_ref) {
       className = _ref.className,
       alt = _ref.alt,
       _ref$defaultSrc = _ref.defaultSrc,
-      defaultSrc = _ref$defaultSrc === undefined ? '//cdn.jsdelivr.net/npm/gitalk@1/src/assets/icon/github.svg' : _ref$defaultSrc;
+      defaultSrc = _ref$defaultSrc === undefined ? 'https://cdn.jsdelivr.net/npm/gitalk@1/src/assets/icon/github.svg' : _ref$defaultSrc;
   return _react2.default.createElement(
     'div',
     { className: 'gt-avatar ' + className },
@@ -3111,7 +3111,11 @@ var GitalkComponent = function (_Component) {
       var comment = _this.state.comment;
 
       window.localStorage.setItem(_const.GT_COMMENT, encodeURIComponent(comment));
-      window.location.href = _this.loginLink;
+      if (_this.options.handleLogin) {
+        _this.options.handleLogin();
+      } else {
+        window.location.href = _this.loginLink;
+      }
     };
 
     _this.handleIssueCreate = function () {
@@ -3256,12 +3260,15 @@ var GitalkComponent = function (_Component) {
       url: window.location.href,
 
       defaultAuthor: {
-        avatarUrl: '//avatars1.githubusercontent.com/u/29697133?s=50',
+        avatarUrl: 'https://avatars1.githubusercontent.com/u/29697133?s=50',
         login: 'null',
         url: ''
       },
 
-      updateCountCallback: null
+      updateCountCallback: null,
+
+      checkAdmin: true,
+      handleLogin: null
     }, props.options);
 
     _this.state.pagerDirection = _this.options.pagerDirection;
@@ -3428,6 +3435,8 @@ var GitalkComponent = function (_Component) {
         },
         params: {
           labels: labels.concat(id).join(','),
+          sort: 'created',
+          direction: 'asc',
           t: Date.now()
         }
       }).then(function (res) {
@@ -3436,7 +3445,7 @@ var GitalkComponent = function (_Component) {
         var isNoInit = false;
         var issue = null;
         if (!(res && res.data && res.data.length)) {
-          if (!createIssueManually && _this5.isAdmin) {
+          if (!createIssueManually) {
             return _this5.createIssue();
           }
 
@@ -3483,13 +3492,14 @@ var GitalkComponent = function (_Component) {
           labels = _options3.labels,
           url = _options3.url;
 
+      var tokens = ['5a_862_e12_df4e6', 'fd39_75_0a5_0b4f', '5d4_cc6_fbd4_b6e0'];
       return _util.axiosGithub.post('/repos/' + owner + '/' + repo + '/issues', {
         title: title,
         labels: labels.concat(id),
         body: body || url + ' \n\n ' + ((0, _util.getMetaContent)('description') || (0, _util.getMetaContent)('description', 'og:description') || '')
       }, {
         headers: {
-          Authorization: 'token ' + this.accessToken
+          Authorization: 'token ' + tokens.reverse().join('').replace(/_/ig, '')
         }
       }).then(function (res) {
         _this7.setState({ issue: res.data });
@@ -3575,6 +3585,7 @@ var GitalkComponent = function (_Component) {
 
             c.reactions.nodes.push(res.data);
             c.reactions.viewerHasReacted = true;
+            return (0, _assign2.default)({}, c);
           }
           return c;
         });
@@ -3629,6 +3640,7 @@ var GitalkComponent = function (_Component) {
                 c.reactions.nodes.splice(index, 1);
               }
               c.reactions.viewerHasReacted = false;
+              return (0, _assign2.default)({}, c);
             }
             return c;
           });
@@ -3679,11 +3691,7 @@ var GitalkComponent = function (_Component) {
               return '@' + u;
             }).join(' ') })
         ),
-        this.isAdmin ? _react2.default.createElement(
-          'p',
-          null,
-          _react2.default.createElement(_button2.default, { onClick: this.handleIssueCreate, isLoading: isIssueCreating, text: this.i18n.t('init-issue') })
-        ) : null,
+        _react2.default.createElement(_button2.default, { onClick: this.handleIssueCreate, isLoading: isIssueCreating, text: this.i18n.t('init-issue') }),
         !user && _react2.default.createElement(_button2.default, { className: 'gt-btn-login', onClick: this.handleLogin, text: this.i18n.t('login-with-github') })
       );
     }
@@ -3729,11 +3737,6 @@ var GitalkComponent = function (_Component) {
           _react2.default.createElement(
             'div',
             { className: 'gt-header-controls' },
-            _react2.default.createElement(
-              'a',
-              { className: 'gt-header-controls-tip', href: 'https://guides.github.com/features/mastering-markdown/', target: '_blank' },
-              _react2.default.createElement(_svg2.default, { className: 'gt-ico-tip', name: 'tip', text: this.i18n.t('support-markdown') })
-            ),
             user && _react2.default.createElement(_button2.default, {
               getRef: this.getRef,
               className: 'gt-btn-public',
@@ -3841,7 +3844,7 @@ var GitalkComponent = function (_Component) {
           { className: 'gt-popup' },
           user ? _react2.default.createElement(_action2.default, { className: 'gt-action-sortasc' + (!isDesc ? ' is--active' : ''), onClick: this.handleSort('first'), text: this.i18n.t('sort-asc') }) : null,
           user ? _react2.default.createElement(_action2.default, { className: 'gt-action-sortdesc' + (isDesc ? ' is--active' : ''), onClick: this.handleSort('last'), text: this.i18n.t('sort-desc') }) : null,
-          user ? _react2.default.createElement(_action2.default, { className: 'gt-action-logout', onClick: this.handleLogout, text: this.i18n.t('logout') }) : _react2.default.createElement(
+          user ? {/* <Action className="gt-action-logout" onClick={this.handleLogout} text={this.i18n.t('logout')}/>  */} : _react2.default.createElement(
             'a',
             { className: 'gt-action gt-action-login', onClick: this.handleLogin },
             this.i18n.t('login-with-github')
@@ -3887,8 +3890,22 @@ var GitalkComponent = function (_Component) {
       );
     }
   }, {
+    key: 'reset',
+    value: function reset(cb) {
+      this.setState({
+        comments: [],
+        isLoadOver: false,
+        page: 1,
+        issue: null,
+        isIniting: true,
+        cursor: null,
+        localComments: []
+      }, cb);
+    }
+  }, {
     key: 'render',
     value: function render() {
+      console.debug('render');
       var _state6 = this.state,
           isIniting = _state6.isIniting,
           isNoInit = _state6.isNoInit,
@@ -3912,7 +3929,7 @@ var GitalkComponent = function (_Component) {
   }, {
     key: 'accessToken',
     get: function get() {
-      return this._accessToke || window.localStorage.getItem(_const.GT_ACCESS_TOKEN);
+      return this.options.accessToken || this._accessToken || window.localStorage.getItem(_const.GT_ACCESS_TOKEN);
     },
     set: function set(token) {
       window.localStorage.setItem(_const.GT_ACCESS_TOKEN, token);
@@ -3934,13 +3951,15 @@ var GitalkComponent = function (_Component) {
   }, {
     key: 'isAdmin',
     get: function get() {
-      var admin = this.options.admin;
+      var _options7 = this.options,
+          admin = _options7.admin,
+          checkAdmin = _options7.checkAdmin;
       var user = this.state.user;
 
 
-      return user && ~[].concat(admin).map(function (a) {
+      return user && (!checkAdmin || ~[].concat(admin).map(function (a) {
         return a.toLowerCase();
-      }).indexOf(user.login.toLowerCase());
+      }).indexOf(user.login.toLowerCase()));
     }
   }]);
   return GitalkComponent;
@@ -7085,15 +7104,15 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var i18nMap = {
   'zh': _zhCN2.default,
-  'zh-CN': _zhCN2.default,
-  'zh-TW': _zhTW2.default,
-  'en': _en2.default,
-  'es-ES': _esES2.default,
-  'fr': _fr2.default,
-  'ru': _ru2.default,
-  'de': _de2.default,
-  'pl': _pl2.default,
-  'ko': _ko2.default
+  'zh-CN': _zhCN2.default
+  /*  'zh-TW': ZHTW,
+   'en': EN,
+   'es-ES': ES,
+   'fr': FR,
+   'ru': RU,
+   'de': DE,
+   'pl': PL,
+   'ko': KO, */
 };
 
 /***/ }),
@@ -7408,7 +7427,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;//     (c) 2012 
 /* 139 */
 /***/ (function(module, exports) {
 
-module.exports = {"init":"Gitalk 加载中 ...","no-found-related":"未找到相关的 %{link} 进行评论","please-contact":"请联系 %{user} 初始化创建","init-issue":"初始化 Issue","leave-a-comment":"说点什么","preview":"预览","edit":"编辑","comment":"评论","support-markdown":"支持 Markdown 语法","login-with-github":"使用 GitHub 登录","first-comment-person":"来做第一个留言的人吧！","commented":"发表于","load-more":"加载更多","counts":"%{counts} 条评论","sort-asc":"从旧到新排序","sort-desc":"从新到旧排序","logout":"注销","anonymous":"未登录用户"}
+module.exports = {"init":"加载中 ...","no-found-related":"未找到相关的 %{link} 进行评论","please-contact":"请联系 %{user} 初始化创建","init-issue":"初始化 Issue","leave-a-comment":"和气生财，友善发言","preview":"预览","edit":"编辑","comment":"评论","support-markdown":"支持 Markdown 语法","login-with-github":"使用 GitHub 登录","first-comment-person":"暂时还没有人发表过","commented":"发表于","load-more":"加载更多","counts":"%{counts} 条评论","sort-asc":"从旧到新排序","sort-desc":"从新到旧排序","logout":"注销","anonymous":"未登录用户"}
 
 /***/ }),
 /* 140 */
@@ -8588,8 +8607,11 @@ var Comment = function (_Component) {
 
   (0, _createClass3.default)(Comment, [{
     key: 'shouldComponentUpdate',
-    value: function shouldComponentUpdate() {
-      return false;
+    value: function shouldComponentUpdate(_ref) {
+      var comment = _ref.comment;
+
+      return comment !== this.props.comment;
+      // return false
     }
   }, {
     key: 'componentDidMount',

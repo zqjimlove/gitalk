@@ -12,14 +12,14 @@ import KO from './ko.json'
 const i18nMap = {
   'zh': ZHCN,
   'zh-CN': ZHCN,
-  'zh-TW': ZHTW,
+ /*  'zh-TW': ZHTW,
   'en': EN,
   'es-ES': ES,
   'fr': FR,
   'ru': RU,
   'de': DE,
   'pl': PL,
-  'ko': KO,
+  'ko': KO, */
 }
 
 export default function (language) {
