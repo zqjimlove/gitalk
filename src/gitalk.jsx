@@ -766,7 +766,8 @@ class GitalkComponent extends Component {
         issue: null,
         isIniting: true,
         cursor: null,
-        localComments: []
+        localComments: [],
+        isOccurError: false
       }, cb)
   }
   render () {
